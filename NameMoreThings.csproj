@@ -1,0 +1,115 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Machine-specific overrides (git-ignored). Example Environment.props:
+       <Project>
+         <PropertyGroup>
+           <GamePath>D:\SteamLibrary\steamapps\common\Valheim</GamePath>
+           <BepInExPath>C:\Users\you\AppData\Roaming\r2modmanPlus-local\Valheim\profiles\Default\BepInEx</BepInExPath>
+           <DeployToGame>false</DeployToGame>
+         </PropertyGroup>
+       </Project> -->
+  <Import Project="Environment.props" Condition="Exists('Environment.props')" />
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>NameMoreThings</AssemblyName>
+    <RootNamespace>NameMoreThings</RootNamespace>
+    <Version>1.0.0</Version>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>portable</DebugType>
+    <DeployToGame Condition="'$(DeployToGame)' == ''">true</DeployToGame>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GamePath)' == '' And '$(OS)' == 'Windows_NT'">
+    <GamePath>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 892970', 'InstallLocation', null, RegistryView.Registry64, RegistryView.Registry32))</GamePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="!Exists('$(GamePath)') And '$(OS)' == 'Windows_NT'">
+    <_SteamPath>$([MSBuild]::GetRegistryValueFromView('HKEY_CURRENT_USER\SOFTWARE\Valve\Steam', 'SteamPath', null, RegistryView.Registry32))</_SteamPath>
+    <GamePath Condition="'$(_SteamPath)' != ''">$(_SteamPath)\steamapps\common\Valheim</GamePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="!Exists('$(GamePath)')">
+    <GamePath Condition="!Exists('$(GamePath)')">C:\Program Files (x86)\Steam\steamapps\common\Valheim</GamePath>
+    <GamePath Condition="!Exists('$(GamePath)')">$(HOME)/.steam/steam/steamapps/common/Valheim</GamePath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManagedPath>$(GamePath)\valheim_Data\Managed</ManagedPath>
+    <BepInExPath Condition="'$(BepInExPath)' == ''">$(GamePath)\BepInEx</BepInExPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
+    <!-- Compile against Jotunn only; players install it separately (Thunderstore: ValheimModding-Jotunn).
+         IncludeAssets="compile" also skips JotunnLib's own build targets. -->
+    <PackageReference Include="JotunnLib" Version="2.30.2" IncludeAssets="compile" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="assembly_valheim" Publicize="true">
+      <HintPath>$(ManagedPath)\assembly_valheim.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_utils" Publicize="true">
+      <HintPath>$(ManagedPath)\assembly_utils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_guiutils">
+      <HintPath>$(ManagedPath)\assembly_guiutils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="gui_framework">
+      <HintPath>$(ManagedPath)\gui_framework.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Splatform">
+      <HintPath>$(ManagedPath)\Splatform.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ManagedPath)\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(ManagedPath)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ManagedPath)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ManagedPath)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ManagedPath)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(ManagedPath)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>$(BepInExPath)\core\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExPath)\core\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CheckGamePath" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(ManagedPath)\assembly_valheim.dll')" Text="Valheim not found at '$(GamePath)'. Pass -p:GamePath=... or create Environment.props (see top of NameMoreThings.csproj)." />
+    <Error Condition="!Exists('$(BepInExPath)\core\BepInEx.dll')" Text="BepInEx not found in '$(BepInExPath)'. Pass -p:BepInExPath=... (e.g. a mod manager profile's BepInEx folder) or create Environment.props." />
+  </Target>
+
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true' And Exists('$(BepInExPath)\plugins')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPath)\plugins\NameMoreThings" />
+    <Message Importance="high" Text="NameMoreThings -> $(BepInExPath)\plugins\NameMoreThings" />
+  </Target>
+
+</Project>
