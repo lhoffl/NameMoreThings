@@ -19,7 +19,7 @@ namespace NameMoreThings
     {
         public const string PluginGUID = "com.lhoffl.NameMoreThings";
         public const string PluginName = "NameMoreThings";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.1.0";
 
         internal static ManualLogSource Log;
         internal static ButtonConfig NameButton;
@@ -65,6 +65,7 @@ namespace NameMoreThings
                 { "namemorethings_topic_door", "Door name" },
                 { "namemorethings_name_boat", "Name boat" },
                 { "namemorethings_name_door", "Name door" },
+                { "namemorethings_display", "Display options" },
                 { "namemorethings_show_name", "Show name above boat" },
                 { "namemorethings_show_on_map", "Show on map" },
             });

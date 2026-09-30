@@ -8,13 +8,14 @@ namespace NameMoreThings
     {
         private const string TrackRpc = "NameMoreThings_Track";
         private const string ListRpc = "NameMoreThings_List";
-        private const int PackageVersion = 1;
+        private const int PackageVersion = 2;
         private const int SectorsPerFrame = 400;
         private const float SweepInterval = 60f;
         private const float DoorResendInterval = 15f;
 
         public struct Remote
         {
+            public long Uid;
             public string Name;
             public Vector3 Position;
             public int Prefab;
@@ -71,7 +72,7 @@ namespace NameMoreThings
             if (Time.time >= s_nextSend)
             {
                 s_nextSend = Time.time + ModConfig.MapUpdateInterval.Value;
-                if (ModConfig.MapEnabled.Value && (!znet.IsDedicated() || znet.GetPeers().Count > 0)) SendLists();
+                if (!znet.IsDedicated() || znet.GetPeers().Count > 0) SendLists();
             }
         }
 
@@ -133,10 +134,7 @@ namespace NameMoreThings
                     s_gone.Add(tracked.Key);
                     continue;
                 }
-                if (ModConfig.Enabled(tracked.Value) && zdo.GetString(NameData.NameKey).Length > 0 && (zdo.GetInt(NameData.FlagsKey) & NameData.ShowOnMapFlag) != 0)
-                {
-                    s_send[(int)tracked.Value].Add(zdo);
-                }
+                if (zdo.GetString(NameData.NameKey).Length > 0) s_send[(int)tracked.Value].Add(zdo);
             }
             foreach (ZDOID id in s_gone) s_tracked.Remove(id);
 
@@ -162,6 +160,7 @@ namespace NameMoreThings
             foreach (ZDO zdo in zdos)
             {
                 pkg.Write(zdo.m_uid);
+                pkg.Write(zdo.GetLong(NameData.UidKey));
                 pkg.Write(zdo.GetString(NameData.NameKey));
                 pkg.Write(zdo.GetString(NameData.AuthorKey));
                 pkg.Write(zdo.GetPosition());
@@ -199,11 +198,12 @@ namespace NameMoreThings
             for (int i = 0; i < count; i++)
             {
                 ZDOID id = pkg.ReadZDOID();
+                long uid = pkg.ReadLong();
                 string name = pkg.ReadString();
                 string author = pkg.ReadString();
                 Vector3 position = pkg.ReadVector3();
                 int prefab = pkg.ReadInt();
-                remotes[id] = new Remote { Name = NameData.Display(name, author), Position = position, Prefab = prefab };
+                remotes[id] = new Remote { Uid = uid, Name = NameData.Display(name, author), Position = position, Prefab = prefab };
             }
         }
     }

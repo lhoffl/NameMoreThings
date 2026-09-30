@@ -41,18 +41,20 @@ namespace NameMoreThings
                     if (!thing.IsValid) continue;
                     ZDOID id = thing.Id;
                     s_loaded.Add(id);
-                    if (ModConfig.Enabled(thing.Kind) && thing.ShowOnMap && thing.DisplayName.Length > 0)
+                    if (thing.HasName && DisplayPrefs.ShowOnMap(thing.Uid, thing.Kind) && thing.DisplayName.Length > 0)
                     {
                         Show(__instance, id, thing.DisplayName, thing.transform.position, thing.PrefabHash, thing.Kind, dt);
                     }
                 }
                 for (int kind = 0; kind < NameTracker.Remotes.Length; kind++)
                 {
-                    if (!ModConfig.Enabled((NamedKind)kind)) continue;
                     foreach (KeyValuePair<ZDOID, NameTracker.Remote> remote in NameTracker.Remotes[kind])
                     {
                         NameTracker.Remote thing = remote.Value;
-                        if (!s_loaded.Contains(remote.Key) && thing.Name.Length > 0) Show(__instance, remote.Key, thing.Name, thing.Position, thing.Prefab, (NamedKind)kind, dt);
+                        if (!s_loaded.Contains(remote.Key) && thing.Name.Length > 0 && DisplayPrefs.ShowOnMap(thing.Uid, (NamedKind)kind))
+                        {
+                            Show(__instance, remote.Key, thing.Name, thing.Position, thing.Prefab, (NamedKind)kind, dt);
+                        }
                     }
                 }
             }

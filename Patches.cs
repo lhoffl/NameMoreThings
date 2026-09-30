@@ -34,8 +34,8 @@ namespace NameMoreThings
         private static void Postfix(ShipControlls __instance, ref string __result)
         {
             NamedObject boat = __instance.m_ship ? __instance.m_ship.GetComponent<NamedObject>() : null;
-            bool canName = Player.m_localPlayer != null && __instance.InUseDistance(Player.m_localPlayer);
-            Patches.AddHoverText(boat, canName, ref __result);
+            bool inRange = Player.m_localPlayer != null && __instance.InUseDistance(Player.m_localPlayer);
+            Patches.AddHoverText(boat, inRange, ref __result);
         }
     }
 
@@ -45,8 +45,7 @@ namespace NameMoreThings
         private static void Postfix(Door __instance, ref string __result)
         {
             if (string.IsNullOrEmpty(__result)) return;
-            bool canName = PrivateArea.CheckAccess(__instance.transform.position, 0f, flash: false);
-            Patches.AddHoverText(__instance.GetComponent<NamedObject>(), canName, ref __result);
+            Patches.AddHoverText(__instance.GetComponent<NamedObject>(), inRange: true, ref __result);
         }
     }
 
@@ -62,24 +61,26 @@ namespace NameMoreThings
 
         public static bool TryGamepadName(NamedObject target, Humanoid character, bool hold, bool alt, ref bool result)
         {
-            if (!alt || !ZInput.IsGamepadActive() || target == null || !target.IsValid || !ModConfig.Enabled(target.Kind)) return true;
+            if (!alt || !ZInput.IsGamepadActive() || target == null || !target.IsValid || !NameDialog.CanOpen(target)) return true;
             result = !hold && NameDialog.Open(target, character);
             return false;
         }
 
-        public static void AddHoverText(NamedObject target, bool canName, ref string text)
+        public static void AddHoverText(NamedObject target, bool inRange, ref string text)
         {
-            if (target == null || !target.IsValid || !ModConfig.Enabled(target.Kind)) return;
+            if (target == null || !target.IsValid) return;
 
             string name = target.DisplayName;
             if (name.Length > 0) text = "<b>" + name + "</b>\n" + text;
-            if (!canName) return;
+            if (!inRange) return;
+            bool canRename = NameDialog.CanRename(target, flash: false);
+            if (!canRename && !target.HasName) return;
 
             string key;
             if (ZInput.IsGamepadActive()) key = ZInput.IsNonClassicFunctionality() ? "$KEY_AltKeys + $KEY_Use" : "$KEY_AltPlace + $KEY_Use";
             else key = ZInput.instance.GetBoundKeyString(Plugin.NameButton.Name, emptyStringOnMissing: true);
             if (key.Length == 0) return;
-            string action = target.Kind == NamedKind.Boat ? "$namemorethings_name_boat" : "$namemorethings_name_door";
+            string action = !canRename ? "$namemorethings_display" : target.Kind == NamedKind.Boat ? "$namemorethings_name_boat" : "$namemorethings_name_door";
             text += Localization.instance.Localize("\n[<color=yellow><b>" + key + "</b></color>] " + action);
         }
     }

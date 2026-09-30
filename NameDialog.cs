@@ -21,9 +21,9 @@ namespace NameMoreThings
 
         public void SetText(string text)
         {
-            if (!_target) return;
-            bool showName = _target.Kind == NamedKind.Boat && NameDialog.ShowNameChecked;
-            _target.SetName(text, showName, NameDialog.ShowOnMapChecked);
+            if (!_target || !_target.IsValid) return;
+            if (!NameDialog.NameLocked && text != _target.DisplayName) _target.SetName(text);
+            DisplayPrefs.Set(_target.Uid, NameDialog.ShowNameChecked, NameDialog.ShowOnMapChecked);
         }
     }
 
@@ -38,13 +38,21 @@ namespace NameMoreThings
 
         internal static bool ShowNameChecked;
         internal static bool ShowOnMapChecked;
+        internal static bool NameLocked;
 
         private static TextInput s_builtFor;
         private static RectTransform s_strip;
         private static Toggle s_showNameToggle;
         private static Toggle s_showOnMapToggle;
+        private static TextInput s_fieldStateFor;
         private static bool s_selectAllOnFocus;
+        private static bool s_fieldInteractable;
         private static NamedKind s_kind;
+
+        public static bool CanRename(NamedObject target, bool flash) =>
+            ModConfig.NamingAllowed(target.Kind) && PrivateArea.CheckAccess(target.transform.position, 0f, flash);
+
+        public static bool CanOpen(NamedObject target) => target.HasName || CanRename(target, flash: false);
 
         public static void CheckNameKey()
         {
@@ -52,15 +60,16 @@ namespace NameMoreThings
             if (player == null || !ZInput.GetButtonDown(Plugin.NameButton.Name) || !player.TakeInput() || player.InPlaceMode()) return;
             GameObject hover = player.GetHoverObject();
             NamedObject target = hover ? hover.GetComponentInParent<NamedObject>() : null;
-            if (target && target.IsValid && ModConfig.Enabled(target.Kind)) Open(target, player);
+            if (target && target.IsValid) Open(target, player);
         }
 
         public static bool Open(NamedObject target, Humanoid user)
         {
-            if (!PrivateArea.CheckAccess(target.transform.position))
+            bool canRename = CanRename(target, flash: true);
+            if (!canRename && !target.HasName)
             {
-                user.Message(MessageHud.MessageType.Center, "$piece_noaccess");
-                return true;
+                if (ModConfig.NamingAllowed(target.Kind)) user.Message(MessageHud.MessageType.Center, "$piece_noaccess");
+                return false;
             }
             var platform = PlatformManager.DistributionPlatform;
             if (!platform.PrivilegeProvider.CheckPrivilege(Privilege.ViewUserGeneratedContent).IsGranted())
@@ -71,10 +80,10 @@ namespace NameMoreThings
             TextInput input = TextInput.instance;
             if (!input) return false;
 
-            bool named = target.HasName;
+            NameLocked = !canRename;
             s_kind = target.Kind;
-            ShowNameChecked = named ? target.ShowName : ModConfig.BoatDefaultShowName.Value;
-            ShowOnMapChecked = named ? target.ShowOnMap : ModConfig.DefaultShowOnMap(target.Kind);
+            ShowNameChecked = DisplayPrefs.ShowName(target.Uid);
+            ShowOnMapChecked = DisplayPrefs.ShowOnMap(target.Uid, target.Kind);
             string topic = target.Kind == NamedKind.Boat ? "$namemorethings_topic_boat" : "$namemorethings_topic_door";
             input.RequestText(new NameReceiver(target), topic, ModConfig.MaxNameLength.Value);
             return true;
@@ -83,13 +92,25 @@ namespace NameMoreThings
         [HarmonyPatch(typeof(TextInput), nameof(TextInput.RequestText))]
         private static class RequestTextPatch
         {
+            private static void Prefix(TextInput __instance, TextReceiver sign)
+            {
+                GuiInputField field = __instance.m_inputField;
+                if (s_fieldStateFor != __instance)
+                {
+                    s_fieldStateFor = __instance;
+                    s_selectAllOnFocus = field.onFocusSelectAll;
+                    s_fieldInteractable = field.interactable;
+                }
+                field.onFocusSelectAll = s_selectAllOnFocus;
+                field.interactable = s_fieldInteractable && !(sign is NameReceiver && NameLocked);
+            }
+
             private static void Postfix(TextInput __instance, TextReceiver sign)
             {
                 bool ours = sign is NameReceiver;
                 if (ours && s_builtFor != __instance) Build(__instance);
                 if (s_builtFor != __instance || !s_strip) return;
 
-                __instance.m_inputField.onFocusSelectAll = s_selectAllOnFocus;
                 s_strip.gameObject.SetActive(ours);
                 if (ours) Layout();
             }
@@ -137,7 +158,6 @@ namespace NameMoreThings
         {
             if (s_strip) Object.Destroy(s_strip.gameObject);
             s_builtFor = input;
-            s_selectAllOnFocus = input.m_inputField.onFocusSelectAll;
 
             var panel = (RectTransform)input.m_panel.transform;
             var strip = new GameObject("NameMoreThingsOptions", typeof(RectTransform));

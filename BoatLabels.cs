@@ -13,14 +13,14 @@ namespace NameMoreThings
         private static void Postfix(EnemyHud __instance)
         {
             Camera camera = Utils.GetMainCamera();
-            bool enabled = ModConfig.BoatsEnabled.Value && ModConfig.LabelsEnabled.Value && camera != null;
+            bool enabled = ModConfig.LabelsEnabled.Value && camera != null;
             float maxDistance = ModConfig.LabelMaxDistance.Value;
             float fadeStart = maxDistance * 0.75f;
 
             foreach (NamedObject boat in NamedObject.Boats)
             {
                 s_labels.TryGetValue(boat, out TMP_Text label);
-                if (!enabled || !boat.IsValid || !boat.ShowName || boat.DisplayName.Length == 0)
+                if (!enabled || !boat.HasName || !DisplayPrefs.ShowName(boat.Uid) || boat.DisplayName.Length == 0)
                 {
                     Hide(label);
                     continue;

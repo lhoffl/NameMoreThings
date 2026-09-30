@@ -1,6 +1,6 @@
 {
   "name": "NameMoreThings",
-  "version_number": "1.0.0",
+  "version_number": "1.1.0",
   "website_url": "https://github.com/lhoffl/NameMoreThings",
   "description": "Name boats and doors like portals. Names show on the map and above boats, synced for everyone on the server.",
   "dependencies": ["denikson-BepInExPack_Valheim-5.4.2333", "ValheimModding-Jotunn-2.30.2"]

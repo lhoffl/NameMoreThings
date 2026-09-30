@@ -1,20 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Machine-specific overrides (git-ignored). Example Environment.props:
-       <Project>
-         <PropertyGroup>
-           <GamePath>D:\SteamLibrary\steamapps\common\Valheim</GamePath>
-           <BepInExPath>C:\Users\you\AppData\Roaming\r2modmanPlus-local\Valheim\profiles\Default\BepInEx</BepInExPath>
-           <DeployToGame>false</DeployToGame>
-         </PropertyGroup>
-       </Project> -->
   <Import Project="Environment.props" Condition="Exists('Environment.props')" />
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
     <AssemblyName>NameMoreThings</AssemblyName>
     <RootNamespace>NameMoreThings</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -42,8 +34,6 @@
 
   <ItemGroup>
     <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
-    <!-- Compile against Jotunn only; players install it separately (Thunderstore: ValheimModding-Jotunn).
-         IncludeAssets="compile" also skips JotunnLib's own build targets. -->
     <PackageReference Include="JotunnLib" Version="2.30.2" IncludeAssets="compile" PrivateAssets="all" />
   </ItemGroup>
 

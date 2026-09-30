@@ -15,10 +15,7 @@ namespace NameMoreThings
     {
         public static readonly int NameKey = "NameMoreThings_Name".GetStableHashCode();
         public static readonly int AuthorKey = "NameMoreThings_Author".GetStableHashCode();
-        public static readonly int FlagsKey = "NameMoreThings_Flags".GetStableHashCode();
-
-        public const int ShowNameFlag = 1;
-        public const int ShowOnMapFlag = 2;
+        public static readonly int UidKey = "NameMoreThings_Uid".GetStableHashCode();
 
         public static string Sanitize(string name)
         {
@@ -66,9 +63,7 @@ namespace NameMoreThings
         public ZDOID Id => _nview.GetZDO().m_uid;
         public int PrefabHash => _nview.GetZDO().GetPrefab();
         public bool HasName => IsValid && _nview.GetZDO().GetString(NameData.NameKey).Length > 0;
-        public bool ShowName => (Flags & NameData.ShowNameFlag) != 0;
-        public bool ShowOnMap => (Flags & NameData.ShowOnMapFlag) != 0;
-        private int Flags => IsValid ? _nview.GetZDO().GetInt(NameData.FlagsKey) : 0;
+        public long Uid => IsValid ? _nview.GetZDO().GetLong(NameData.UidKey) : 0L;
 
         public string DisplayName
         {
@@ -123,14 +118,14 @@ namespace NameMoreThings
             BoatLabels.Remove(this);
         }
 
-        public void SetName(string name, bool showName, bool showOnMap)
+        public void SetName(string name)
         {
             if (!IsValid) return;
             if (!_nview.IsOwner()) _nview.ClaimOwnership();
             ZDO zdo = _nview.GetZDO();
+            if (zdo.GetLong(NameData.UidKey) == 0L) zdo.Set(NameData.UidKey, Utils.GenerateUID());
             zdo.Set(NameData.NameKey, NameData.Sanitize(name));
             zdo.Set(NameData.AuthorKey, NameData.LocalAuthor());
-            zdo.Set(NameData.FlagsKey, (showName ? NameData.ShowNameFlag : 0) | (showOnMap ? NameData.ShowOnMapFlag : 0));
             NameTracker.NotifyServer(Id);
         }
     }
