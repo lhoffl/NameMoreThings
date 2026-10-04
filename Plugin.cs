@@ -19,7 +19,7 @@ namespace NameMoreThings
     {
         public const string PluginGUID = "com.lhoffl.NameMoreThings";
         public const string PluginName = "NameMoreThings";
-        public const string PluginVersion = "1.1.0";
+        public const string PluginVersion = "1.2.0";
 
         internal static ManualLogSource Log;
         internal static ButtonConfig NameButton;
