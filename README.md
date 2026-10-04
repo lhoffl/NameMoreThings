@@ -1,12 +1,16 @@
 # NameMoreThings
 
-A BepInEx mod for Valheim 1.0. Name boats and doors to see them on the map.
+A BepInEx mod for Valheim 1.0. Name boats and doors to see them on the map. Tagged portals show on the map too.
 
-- Look at a boat rudder or a door and press **N** to name it. The keybind can be changed in the config.
+- Look at a boat rudder or a door and press **N** to name it. The keybind can be changed in the config. On a controller,
+  use the alternate interact (the same button that renames tamed creatures).
 - Under the name field are toggles for that boat or door. They only change what you see, and are saved with your character:
   - **Show name above boat** shows the name floating over the mast.
   - **Show on map** shows the name and icon on the map. Boat pins follow the boat. On by default.
+  - On a controller, **Y** and **LT** flip the two toggles.
 - The name shows when you look at the rudder or door. Leaving the name empty removes it.
+- Portals show on the map with their tag. Set the tag as usual.
+- Nearby portals or doors with the same name show as one pin. 
 
 Names are saved with the world and everyone on the server sees them. Like portal tags, you can't rename a boat or
 door inside someone else's ward, but you can still open the menu to change your toggles.
@@ -18,20 +22,24 @@ Requires [Jötunn](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/).
 The config file is `BepInEx/config/com.lhoffl.NameMoreThings.cfg`. It reloads automatically when you save
 it, so you can tune it while the game runs.
 
-| Setting | Default | |
-|---|---------|---|
-| `Server.MaxNameLength` | 24      | Longest name allowed. Synced from the server. |
-| `Server.AllowNamingBoats` / `AllowNamingDoors` | true    | Whether players can name boats / doors. Synced from the server. |
-| `Server.MapUpdateInterval` | 2       | Seconds between the server sending far-away boat positions. Synced from the server. |
-| `Controls.NameKey` | N       | Key that opens the naming menu. |
-| `Names above boats.Enabled` | true    | false hides every name above boats and removes the toggle from the menu. |
-| `Names above boats.ShowByDefault` | true    | Show the name above boats you haven't set yourself. |
-| `Names above boats.MaxDistance` | 100     | Meters from the camera within which names are shown. They fade out over the last quarter. |
-| `Names above boats.FontSize` | 20      | |
-| `Names above boats.HeightOffset` | 1       | Meters between the top of the boat and its name. |
-| `Map.Enabled` | true    | false hides every pin and removes the toggle from the menu. |
-| `Map.ShowOnMinimap` | true    | Also show pins on the small minimap, not just the large map. |
-| `Map.ShowBoatsByDefault` / `ShowDoorsByDefault` | true    | Show boats / doors you haven't set yourself. |
+| Setting | Default |                                                                                                                                                                     |
+|---|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Server.MaxNameLength` | 24      | Longest name allowed. Synced from the server.                                                                                                                       |
+| `Server.AllowNamingBoats` / `AllowNamingDoors` | true    | Whether players can name boats / doors. Synced from the server.                                                                                                     |
+| `Server.MapUpdateInterval` | 2       | Seconds between the server sending far-away boat positions. Synced from the server.                                                                                 |
+| `Controls.NameKey` | N       | Key that opens the naming menu.                                                                                                                                     |
+| `Names above boats.Enabled` | true    | false hides every name above boats and removes the toggle from the menu.                                                                                            |
+| `Names above boats.ShowByDefault` | true    | Show the name above boats you haven't set yourself.                                                                                                                 |
+| `Names above boats.MaxDistance` | 100     | Meters from the camera within which names are shown. They fade out over the last quarter.                                                                           |
+| `Names above boats.FontSize` | 20      |                                                                                                                                                                     |
+| `Names above boats.HeightOffset` | 1       | Meters between the top of the boat and its name.                                                                                                                    |
+| `Map.Enabled` | true    | false hides every pin and removes the toggle from the menu.                                                                                                         |
+| `Map.ShowOnMinimap` | true    | Also show pins on the small minimap, not just the large map.                                                                                                        |
+| `Map.ShowBoatsByDefault` / `ShowDoorsByDefault` | true    | Show boats / doors you haven't set yourself.                                                                                                                        |
+| `Map.ShowPortals` | true    | Show portals that have a tag.                                                                                                                                       |
+| `Map.MergeDoors` | true    | Show doors with the same name that are close together as one pin.                                                                                                   |
+| `Map.MergePortals` | true    | Show portals that are close together as one pin without a name.                                                                                                     |
+| `Map.MergeDistance` | 50      | Meters apart that doors or portals can be and still merge. A row of portals each this close to the next merges into one pin. Doors only merge if they share a name. |
 
 ## Multiplayer
 

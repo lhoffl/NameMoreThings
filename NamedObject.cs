@@ -9,6 +9,8 @@ namespace NameMoreThings
     {
         Boat,
         Door,
+        // Named with the game's own portal tag, so only shown on the map, never a NamedObject.
+        Portal,
     }
 
     internal static class NameData

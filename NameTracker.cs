@@ -11,7 +11,7 @@ namespace NameMoreThings
         private const int PackageVersion = 2;
         private const int SectorsPerFrame = 400;
         private const float SweepInterval = 60f;
-        private const float DoorResendInterval = 15f;
+        private const float StaticResendInterval = 15f;
 
         public struct Remote
         {
@@ -21,20 +21,20 @@ namespace NameMoreThings
             public int Prefab;
         }
 
-        public static readonly Dictionary<ZDOID, Remote>[] Remotes = { new Dictionary<ZDOID, Remote>(), new Dictionary<ZDOID, Remote>() };
+        public static readonly Dictionary<ZDOID, Remote>[] Remotes = { new Dictionary<ZDOID, Remote>(), new Dictionary<ZDOID, Remote>(), new Dictionary<ZDOID, Remote>() };
         private static bool s_serverHasMod;
 
         private static readonly Dictionary<ZDOID, NamedKind> s_tracked = new Dictionary<ZDOID, NamedKind>();
         private static readonly Dictionary<int, NamedKind> s_prefabKinds = new Dictionary<int, NamedKind>();
-        private static readonly List<ZDO>[] s_send = { new List<ZDO>(), new List<ZDO>() };
+        private static readonly List<ZDO>[] s_send = { new List<ZDO>(), new List<ZDO>(), new List<ZDO>() };
         private static readonly List<ZDOID> s_gone = new List<ZDOID>();
         private static ZNetScene s_prefabScene;
         private static ZDOMan s_zdoMan;
         private static int s_sweepIndex;
         private static float s_nextSweep;
         private static float s_nextSend;
-        private static float s_nextDoorResend;
-        private static byte[] s_lastDoorList;
+        private static readonly float[] s_nextStaticResend = new float[3];
+        private static readonly byte[][] s_lastStaticList = new byte[3][];
 
         [HarmonyPatch(typeof(Game), nameof(Game.Start))]
         private static class RegisterRpcs
@@ -64,7 +64,7 @@ namespace NameMoreThings
                 s_zdoMan = ZDOMan.instance;
                 s_tracked.Clear();
                 s_sweepIndex = 0;
-                s_lastDoorList = null;
+                System.Array.Clear(s_lastStaticList, 0, s_lastStaticList.Length);
             }
             if (s_prefabScene != ZNetScene.instance) FindPrefabs();
 
@@ -138,21 +138,35 @@ namespace NameMoreThings
             }
             foreach (ZDOID id in s_gone) s_tracked.Remove(id);
 
-            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, ListRpc, BuildList(NamedKind.Boat));
-
-            ZPackage doors = BuildList(NamedKind.Door);
-            byte[] doorBytes = doors.GetArray();
-            if (Time.time >= s_nextDoorResend || !SameBytes(doorBytes, s_lastDoorList))
+            foreach (List<ZDO> portals in s_zdoMan.GetPortals().Values)
             {
-                s_lastDoorList = doorBytes;
-                s_nextDoorResend = Time.time + DoorResendInterval;
-                ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, ListRpc, doors);
+                foreach (ZDO zdo in portals)
+                {
+                    if (zdo.GetString(ZDOVars.s_tag).Length > 0) s_send[(int)NamedKind.Portal].Add(zdo);
+                }
             }
+
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, ListRpc, BuildList(NamedKind.Boat));
+            SendIfChanged(NamedKind.Door);
+            SendIfChanged(NamedKind.Portal);
+        }
+
+        private static void SendIfChanged(NamedKind kind)
+        {
+            ZPackage pkg = BuildList(kind);
+            byte[] bytes = pkg.GetArray();
+            int i = (int)kind;
+            if (Time.time < s_nextStaticResend[i] && SameBytes(bytes, s_lastStaticList[i])) return;
+            s_lastStaticList[i] = bytes;
+            s_nextStaticResend[i] = Time.time + StaticResendInterval;
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, ListRpc, pkg);
         }
 
         private static ZPackage BuildList(NamedKind kind)
         {
             List<ZDO> zdos = s_send[(int)kind];
+            int nameKey = kind == NamedKind.Portal ? ZDOVars.s_tag : NameData.NameKey;
+            int authorKey = kind == NamedKind.Portal ? ZDOVars.s_tagauthor : NameData.AuthorKey;
             var pkg = new ZPackage();
             pkg.Write(PackageVersion);
             pkg.Write((int)kind);
@@ -161,8 +175,8 @@ namespace NameMoreThings
             {
                 pkg.Write(zdo.m_uid);
                 pkg.Write(zdo.GetLong(NameData.UidKey));
-                pkg.Write(zdo.GetString(NameData.NameKey));
-                pkg.Write(zdo.GetString(NameData.AuthorKey));
+                pkg.Write(zdo.GetString(nameKey));
+                pkg.Write(zdo.GetString(authorKey));
                 pkg.Write(zdo.GetPosition());
                 pkg.Write(zdo.GetPrefab());
             }

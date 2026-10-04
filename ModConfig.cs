@@ -27,6 +27,10 @@ namespace NameMoreThings
         public static ConfigEntry<bool> ShowOnMinimap;
         public static ConfigEntry<bool> MapShowBoatsByDefault;
         public static ConfigEntry<bool> MapShowDoorsByDefault;
+        public static ConfigEntry<bool> MapShowPortals;
+        public static ConfigEntry<bool> MergeDoors;
+        public static ConfigEntry<bool> MergePortals;
+        public static ConfigEntry<float> MergeDistance;
 
         public static void Bind(ConfigFile config)
         {
@@ -40,18 +44,32 @@ namespace NameMoreThings
             LabelsEnabled = config.Bind(LabelSection, "Enabled", true, "Show names floating above boats. false hides them all and removes the toggle from the naming menu.");
             LabelShowByDefault = config.Bind(LabelSection, "ShowByDefault", true, "Show the name above boats you haven't set yourself in the naming menu.");
             LabelMaxDistance = config.Bind(LabelSection, "MaxDistance", 100f, new ConfigDescription("Names are shown for boats within this many meters of the camera.", new AcceptableValueRange<float>(5f, 300f)));
-            LabelFontSize = config.Bind(LabelSection, "FontSize", 22, new ConfigDescription("Font size of the name above the boat.", new AcceptableValueRange<int>(8, 64)));
+            LabelFontSize = config.Bind(LabelSection, "FontSize", 20, new ConfigDescription("Font size of the name above the boat.", new AcceptableValueRange<int>(8, 64)));
             LabelHeightOffset = config.Bind(LabelSection, "HeightOffset", 1f, new ConfigDescription("Meters between the top of the boat (usually the mast) and its name.", new AcceptableValueRange<float>(-20f, 20f)));
 
-            MapEnabled = config.Bind(MapSection, "Enabled", true, "Show named boats and doors on the map. false hides them all and removes the toggle from the naming menu.");
+            MapEnabled = config.Bind(MapSection, "Enabled", true, "Show named boats, doors and portals on the map. false hides them all and removes the toggle from the naming menu.");
             ShowOnMinimap = config.Bind(MapSection, "ShowOnMinimap", true, "Also show them on the small minimap, not just the large map.");
             MapShowBoatsByDefault = config.Bind(MapSection, "ShowBoatsByDefault", true, "Show named boats you haven't set yourself in the naming menu.");
             MapShowDoorsByDefault = config.Bind(MapSection, "ShowDoorsByDefault", true, "Show named doors you haven't set yourself in the naming menu.");
+            MapShowPortals = config.Bind(MapSection, "ShowPortals", true, "Show portals that have a tag, with the tag as their name.");
+            MergeDoors = config.Bind(MapSection, "MergeDoors", true, "Show doors with the same name that are close together as one pin.");
+            MergePortals = config.Bind(MapSection, "MergePortals", true, "Show portals that are close together, like a portal room, as one pin without a name.");
+            MergeDistance = config.Bind(MapSection, "MergeDistance", 50f, new ConfigDescription("Meters apart that doors or portals can be and still merge. A row of portals each this close to the next merges into one pin.", new AcceptableValueRange<float>(1f, 100f)));
         }
 
-        public static bool NamingAllowed(NamedKind kind) => kind == NamedKind.Boat ? AllowNamingBoats.Value : AllowNamingDoors.Value;
+        public static bool NamingAllowed(NamedKind kind) => kind switch
+        {
+            NamedKind.Boat => AllowNamingBoats.Value,
+            NamedKind.Door => AllowNamingDoors.Value,
+            _ => false,
+        };
 
-        public static bool ShowOnMapByDefault(NamedKind kind) => kind == NamedKind.Boat ? MapShowBoatsByDefault.Value : MapShowDoorsByDefault.Value;
+        public static bool ShowOnMapByDefault(NamedKind kind) => kind switch
+        {
+            NamedKind.Boat => MapShowBoatsByDefault.Value,
+            NamedKind.Door => MapShowDoorsByDefault.Value,
+            _ => MapShowPortals.Value,
+        };
 
         private static ConfigEntry<T> BindSynced<T>(ConfigFile config, string section, string key, T value, string description, AcceptableValueBase range = null) =>
             config.Bind(section, key, value, new ConfigDescription(description, range, new ConfigurationManagerAttributes { IsAdminOnly = true }));

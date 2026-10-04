@@ -48,7 +48,7 @@ namespace NameMoreThings
                 Log.LogInfo("Config reloaded");
             }
             NameTracker.Update();
-            NameDialog.CheckNameKey();
+            NameDialog.Update();
         }
 
         private void OnDestroy()

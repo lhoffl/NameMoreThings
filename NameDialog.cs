@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using GUIFramework;
 using HarmonyLib;
 using Jotunn.Managers;
@@ -44,6 +45,8 @@ namespace NameMoreThings
         private static RectTransform s_strip;
         private static Toggle s_showNameToggle;
         private static Toggle s_showOnMapToggle;
+        private static readonly List<GameObject> s_hints = new List<GameObject>();
+        private static bool s_open;
         private static TextInput s_fieldStateFor;
         private static bool s_selectAllOnFocus;
         private static bool s_fieldInteractable;
@@ -54,7 +57,31 @@ namespace NameMoreThings
 
         public static bool CanOpen(NamedObject target) => target.HasName || CanRename(target, flash: false);
 
-        public static void CheckNameKey()
+        public static void Update()
+        {
+            CheckNameKey();
+            UpdateGamepad();
+        }
+
+        private static void UpdateGamepad()
+        {
+            if (!s_open || !TextInput.IsVisible() || !s_strip || !s_strip.gameObject.activeInHierarchy) return;
+            bool gamepad = ZInput.IsGamepadActive();
+            foreach (GameObject hint in s_hints)
+            {
+                if (hint && hint.activeSelf != gamepad) hint.SetActive(gamepad);
+            }
+            if (!gamepad) return;
+            if (ZInput.GetButtonDown("JoyButtonY")) Flip(s_showNameToggle);
+            if (ZInput.GetButtonDown("JoyLTrigger")) Flip(s_showOnMapToggle);
+        }
+
+        private static void Flip(Toggle toggle)
+        {
+            if (toggle && toggle.gameObject.activeInHierarchy) toggle.isOn = !toggle.isOn;
+        }
+
+        private static void CheckNameKey()
         {
             Player player = Player.m_localPlayer;
             if (player == null || !ZInput.GetButtonDown(Plugin.NameButton.Name) || !player.TakeInput() || player.InPlaceMode()) return;
@@ -108,6 +135,7 @@ namespace NameMoreThings
             private static void Postfix(TextInput __instance, TextReceiver sign)
             {
                 bool ours = sign is NameReceiver;
+                s_open = ours;
                 if (ours && s_builtFor != __instance) Build(__instance);
                 if (s_builtFor != __instance || !s_strip) return;
 
@@ -187,14 +215,15 @@ namespace NameMoreThings
             Transform cancelText = panel.Find("Cancel/Text");
             TMP_Text textTemplate = cancelText ? cancelText.GetComponent<TMP_Text>() : null;
             if (!textTemplate) textTemplate = input.m_topic;
+            s_hints.Clear();
             Transform cancelHint = panel.Find("Cancel/gamepad_hint");
             GameObject hintTemplate = cancelHint ? cancelHint.gameObject : null;
-            s_showNameToggle = CreateToggle(s_strip, "$namemorethings_show_name", "JoyButtonY", "$KEY_ButtonY", textTemplate, hintTemplate, on => ShowNameChecked = on);
-            s_showOnMapToggle = CreateToggle(s_strip, "$namemorethings_show_on_map", "JoyLTrigger", "$KEY_LTrigger", textTemplate, hintTemplate, on => ShowOnMapChecked = on);
+            s_showNameToggle = CreateToggle(s_strip, "$namemorethings_show_name", "$KEY_ButtonY", textTemplate, hintTemplate, on => ShowNameChecked = on);
+            s_showOnMapToggle = CreateToggle(s_strip, "$namemorethings_show_on_map", "$KEY_LTrigger", textTemplate, hintTemplate, on => ShowOnMapChecked = on);
             strip.SetActive(false);
         }
 
-        private static Toggle CreateToggle(Transform parent, string labelToken, string joyButton, string joyHint, TMP_Text textTemplate, GameObject hintTemplate, System.Action<bool> onChanged)
+        private static Toggle CreateToggle(Transform parent, string labelToken, string joyHint, TMP_Text textTemplate, GameObject hintTemplate, System.Action<bool> onChanged)
         {
             var root = new GameObject("Toggle", typeof(RectTransform));
             root.transform.SetParent(parent, false);
@@ -253,9 +282,8 @@ namespace NameMoreThings
                 hintRt.anchoredPosition = Vector2.zero;
                 TMP_Text hintText = hint.GetComponentInChildren<TMP_Text>(true);
                 if (hintText) hintText.text = Localization.instance.Localize(joyHint);
-                var gamepad = root.AddComponent<UIGamePad>();
-                gamepad.m_zinputKey = joyButton;
-                gamepad.m_hint = hint;
+                hint.SetActive(false);
+                s_hints.Add(hint);
             }
 
             toggle.onValueChanged.AddListener(on =>
